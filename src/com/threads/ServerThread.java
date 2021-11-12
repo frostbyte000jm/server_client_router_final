@@ -2,6 +2,7 @@ package com.threads;
 
 import com.Main.TCPServer;
 import com.classes.MachineContainer;
+import com.staticFields.settingsForServer;
 
 import java.io.*;
 import java.net.Socket;
@@ -16,13 +17,19 @@ public class ServerThread extends Thread{
     public ServerThread(Socket routerSocket, TCPServer tcpServer) throws IOException {
         this.tcpServer = tcpServer;
 
-        this.tcpServer.yellClients();
-
         // Connect to Server
         System.out.println("Connection established.");
         dataOutputStream = new DataOutputStream(routerSocket.getOutputStream());
         dataInputStream = new DataInputStream(routerSocket.getInputStream());
 
+
+    }
+
+    public void run(){
+
+    }
+
+    private void newClientInfo() throws IOException {
         //ask client for information
         dataOutputStream.writeUTF("Ask Client for Machine Info.");
 
@@ -43,10 +50,6 @@ public class ServerThread extends Thread{
         System.out.println(machineContainer.getMachineInfo());
 
         tcpServer.addClient(machineContainer);
-    }
-
-    public void run(){
-
     }
 
     private void newConnection() throws IOException {
@@ -88,7 +91,7 @@ public class ServerThread extends Thread{
         }
 
         // end server loop
-        doRun = false;
+        //doRun = false;
 
         // inform Router to inform client we are disconnecting
         dataOutputStream.writeUTF("good_bye");
@@ -277,7 +280,7 @@ public class ServerThread extends Thread{
         String msg = "";
 
         // end server loop
-        doRun = false;
+        //doRun = false;
 
         // inform Router to inform client we are disconnecting
         dataOutputStream.writeUTF("good_bye");
@@ -319,12 +322,12 @@ public class ServerThread extends Thread{
         } else if (idx == 7) {
             sendAction("good_bye");
         } else if (idx == 8) {
-            for (ClientContainer clientContainer: arrClientContainer
+            /*for (ClientContainer clientContainer: arrClientContainer
             ) {
                 System.out.println("Container: "+clientContainer.getIpAddy());
             }
             //back to home
-            sendAction("welcome_msg");
+            sendAction("welcome_msg");*/
         }
     }
 

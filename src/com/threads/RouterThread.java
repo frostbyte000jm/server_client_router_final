@@ -3,15 +3,18 @@ package com.threads;
 import java.io.*;
 import java.net.Socket;
 
+import com.Main.TCPRouter;
 import com.classes.MachineContainer;
 import com.staticFields.settingsForRouter;
 
-public class RouterThread extends Thread{
+public class RouterThread extends Thread {
     //declarations
     private DataInputStream dataInputStreamClient, dataInputStreamServer;
     private DataOutputStream dataOutputStreamClient, dataOutputStreamServer;
+    private TCPRouter tcpRouter;
 
-    public RouterThread(Socket clientSocket) throws IOException, ClassNotFoundException {
+    public RouterThread(Socket clientSocket, TCPRouter tcpRouter) throws IOException, ClassNotFoundException {
+        this.tcpRouter = tcpRouter;
         //Connect to Client
         System.out.println("Connection established.");
 
@@ -23,14 +26,13 @@ public class RouterThread extends Thread{
         /*String machineInfo = dataInputStreamClient.readUTF();
         System.out.println(machineInfo);*/
 
-
+        dataOutputStreamClient.writeUTF("Hello Client");
         String msgClient = dataInputStreamClient.readUTF();
         System.out.println("Client Said: "+msgClient);
-        dataOutputStreamClient.writeUTF("Hello Client");
 
         //connect to Server
-        String serverIPAddress = settingsForRouter.getServerIpAddress();
-        int serverPortNum = settingsForRouter.getServerPortNum();
+        String serverIPAddress = tcpRouter.getServerIPAddress();
+        int serverPortNum = tcpRouter.getPortNumServer();
         Socket serverSocket = new Socket(serverIPAddress,serverPortNum);
         dataOutputStreamServer = new DataOutputStream(serverSocket.getOutputStream());
         dataInputStreamServer = new DataInputStream(serverSocket.getInputStream());

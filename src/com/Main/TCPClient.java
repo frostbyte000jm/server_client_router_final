@@ -22,38 +22,17 @@ public class TCPClient {
         machineContainer.setLocalIPAddress(processComputerInfo.getLocalIPAddress());
         machineContainer.setExternalIPAddress(processComputerInfo.getExternalIP());
 
-        new TCPClient().login(machineContainer);
+        new TCPClient().connectToRouter(machineContainer);
     }
 
-    public void login(MachineContainer machineContainer) throws IOException {
-        // who are you?
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter UserName:");
-        String username = scanner.nextLine();
-        machineContainer.setUserName(username);
-        System.out.println("Enter your Port Number:");
-        int clientPortNum;
-        while (true) {
-            try {
-                clientPortNum = Integer.parseInt(scanner.nextLine());
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter your Port Number: ");
-            }
-        }
-        machineContainer.setPortNum(clientPortNum);
-        connectToRouter(machineContainer, scanner);
-    }
-
-    private void connectToRouter(MachineContainer machineContainer, Scanner scanner) throws IOException {
+    private void connectToRouter(MachineContainer machineContainer) throws IOException {
         //declarations
         boolean doRun = true;
+        Scanner scanner = new Scanner(System.in);
 
         while (doRun){
-            //clear screen and welcome
-            System.out.print("\033[H\033[2J");
-            System.out.flush();
-            System.out.println("Welcome "+machineContainer.getUserName()+". Please enter IP address of what server you would like to connect to.");
+            //Connect to Router
+            System.out.println("Please enter IP address of what server you would like to connect to.");
 
             // who are you connecting to?
             System.out.println("Router IP Address:");
@@ -75,11 +54,45 @@ public class TCPClient {
             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
-
-            sendComputerInfo(socket, machineContainer, dataInputStream, dataOutputStream);
-            waitForMessages(socket, scanner, dataInputStream, dataOutputStream);
+            handshake(dataInputStream, dataOutputStream);
+            //sendComputerInfo(socket, machineContainer, dataInputStream, dataOutputStream);
+            //waitForMessages(socket, scanner, dataInputStream, dataOutputStream);
         }
     }
+
+    private void handshake(DataInputStream dataInputStream, DataOutputStream dataOutputStream) throws IOException {
+        //declaration
+        String message = "";
+
+        //Wait for handshake Router
+        message = dataInputStream.readUTF();
+        System.out.println("Router: "+message);
+        dataOutputStream.writeUTF("Hello Router.");
+
+        //Wait for handshake Server
+
+    }
+
+    public void login(MachineContainer machineContainer) throws IOException {
+        // who are you?
+        System.out.println("Enter UserName:");
+        String username = scanner.nextLine();
+        machineContainer.setUserName(username);
+        System.out.println("Enter your Port Number:");
+        int portNum;
+        while (true) {
+            try {
+                portNum = Integer.parseInt(scanner.nextLine());
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter your Port Number: ");
+            }
+        }
+        machineContainer.setPortNum(portNum);
+        //connectToRouter(machineContainer, scanner);
+    }
+
+
 
     private void sendComputerInfo(Socket socket, MachineContainer machineContainer, DataInputStream dataInputStream,
                                   DataOutputStream dataOutputStream) throws IOException {

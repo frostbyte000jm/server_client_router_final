@@ -5,7 +5,8 @@ import java.io.Serializable;
 public class MachineContainer implements Serializable {
     //declaration
     private String localHostName, localIPAddress, externalIPAddress, userName;
-    private int portNum;
+    private int portNum, portNumToCall, isServer, isRouter;
+    private String serverIPAddress;
 
     public MachineContainer() {
         this.localHostName = "";
@@ -13,10 +14,13 @@ public class MachineContainer implements Serializable {
         this.externalIPAddress = "";
         this.userName = "";
         this.portNum = 0;
+        this.portNumToCall = 0;
+        this.isServer = 0;
+        this.isRouter = 0;
     }
 
     public String getMachineInfo(){
-        return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum;
+        return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum+"|"+portNumToCall+"|"+isServer+"|"+isRouter+"|"+serverIPAddress;
     }
 
     //get
@@ -25,6 +29,10 @@ public class MachineContainer implements Serializable {
     public String getExternalIPAddress(){ return externalIPAddress; }
     public String getUserName(){ return userName; }
     public int getPortNum(){ return portNum; }
+    public int getPortNumToCall(){ return portNumToCall; }
+    public int getIsServer(){ return isServer; }
+    public int getIsRouter(){ return isRouter; }
+    public String getServerIPAddress(){ return serverIPAddress; }
 
     //set
     public void setLocalHostName(String localHostName){this.localHostName = localHostName;}
@@ -32,7 +40,10 @@ public class MachineContainer implements Serializable {
     public void setExternalIPAddress(String externalIPAddress) {this.externalIPAddress = externalIPAddress;}
     public void setUserName(String userName){ this.userName = userName; }
     public void setPortNum(int portNum){ this.portNum = portNum; }
-
+    public void setPortNumToCall(int portNumToCall){ this.portNumToCall = portNumToCall; }
+    public void setIsServer(int isServer){ this.isServer = isServer; }
+    public void setIsRouter(int isRouter){ this.isRouter = isRouter; }
+    public void setServerIPAddress(String serverIPAddress){ this.serverIPAddress = serverIPAddress; }
 
 }
 /*private String localIPAddress, externalIPAddress, localHostName, userName;
