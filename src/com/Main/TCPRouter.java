@@ -37,29 +37,35 @@ public class TCPRouter {
         //declarations
         Scanner scanner = new Scanner(System.in);
 
-        //Setup Server
+        //Setup Router
         System.out.println("Enter Router Name:");
-        String username = scanner.nextLine();
+        //String username = scanner.nextLine();
+        String username = "router01";
         machineContainer.setUserName(username);
         System.out.println("Enter your Port Number:");
         int portNum;
         while (true) {
             try {
-                portNum = Integer.parseInt(scanner.nextLine());
+                //portNum = Integer.parseInt(scanner.nextLine());
+                portNum = 5678;
                 break;
             } catch (NumberFormatException e) {
                 System.out.println("Please enter your Port Number: ");
             }
         }
         machineContainer.setPortNum(portNum);
+
+        //setup Server
         System.out.println("Enter Server IP Address:");
-        String serverIPAddress = scanner.nextLine();
+        //String serverIPAddress = scanner.nextLine();
+        String serverIPAddress = "127.0.1.1";
         machineContainer.setServerIPAddress(serverIPAddress);
         System.out.println("Enter the Server Port Number:");
         int portNumServer;
         while (true) {
             try {
-                portNumServer = Integer.parseInt(scanner.nextLine());
+                //portNumServer = Integer.parseInt(scanner.nextLine());
+                portNumServer = 5566;
                 break;
             } catch (NumberFormatException e) {
                 System.out.println("Please enter your Port Number: ");
@@ -96,6 +102,7 @@ public class TCPRouter {
             System.out.println("Waiting for Connection...");
             try {
                 clientSocket = serverSocket.accept();
+                serverSocket.close();
             } catch (IOException e) {
                 doRun = false;
                 System.err.println("Unable to accept a connection.");
@@ -104,6 +111,7 @@ public class TCPRouter {
 
             RouterThread routerThread = new RouterThread(clientSocket,this);
             routerThread.start();
+
 
             System.out.println("Thread Created");
         }

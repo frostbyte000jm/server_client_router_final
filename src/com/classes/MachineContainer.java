@@ -9,18 +9,38 @@ public class MachineContainer implements Serializable {
     private String serverIPAddress;
 
     public MachineContainer() {
-        this.localHostName = "";
-        this.localIPAddress = "";
-        this.externalIPAddress = "";
-        this.userName = "";
+        this.localHostName = "_";
+        this.localIPAddress = "_";
+        this.externalIPAddress = "_";
+        this.userName = "_";
         this.portNum = 0;
         this.portNumToCall = 0;
         this.isServer = 0;
         this.isRouter = 0;
+        this.serverIPAddress = "_";
     }
 
     public String getMachineInfo(){
-        return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum+"|"+portNumToCall+"|"+isServer+"|"+isRouter+"|"+serverIPAddress;
+        return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum+"|"+portNumToCall+"|"+isServer+"|"+isRouter+"|"+serverIPAddress+"|";
+    }
+
+    public void setMachineInfo(String machineInfo){
+        String[] info = machineInfo.split("\\|");
+        System.out.println("Machine Container: ");
+
+        for (int i = 0; i < info.length; i++){
+            System.out.println("Info["+i+"]: "+info[i]);
+        }
+
+        this.localHostName = info[0];
+        this.localIPAddress = info[1];
+        this.externalIPAddress = info[2];
+        this.userName = info[3];
+        this.portNum = Integer.parseInt(info[4]);
+        this.portNumToCall = Integer.parseInt(info[5]);
+        this.isServer = Integer.parseInt(info[6]);
+        this.isRouter = Integer.parseInt(info[7]);
+        this.serverIPAddress = info[8];
     }
 
     //get

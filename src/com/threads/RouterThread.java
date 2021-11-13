@@ -15,6 +15,7 @@ public class RouterThread extends Thread {
 
     public RouterThread(Socket clientSocket, TCPRouter tcpRouter) throws IOException, ClassNotFoundException {
         this.tcpRouter = tcpRouter;
+
         //Connect to Client
         System.out.println("Connection established.");
 
@@ -22,10 +23,7 @@ public class RouterThread extends Thread {
         dataOutputStreamClient = new DataOutputStream(clientSocket.getOutputStream());
         dataInputStreamClient = new DataInputStream(clientSocket.getInputStream());
 
-        //get computer info
-        /*String machineInfo = dataInputStreamClient.readUTF();
-        System.out.println(machineInfo);*/
-
+        //handshake Client
         dataOutputStreamClient.writeUTF("Hello Client");
         String msgClient = dataInputStreamClient.readUTF();
         System.out.println("Client Said: "+msgClient);
@@ -33,6 +31,7 @@ public class RouterThread extends Thread {
         //connect to Server
         String serverIPAddress = tcpRouter.getServerIPAddress();
         int serverPortNum = tcpRouter.getPortNumServer();
+        System.out.println("Attempting to connect to: "+serverIPAddress+" port: "+serverPortNum);
         Socket serverSocket = new Socket(serverIPAddress,serverPortNum);
         dataOutputStreamServer = new DataOutputStream(serverSocket.getOutputStream());
         dataInputStreamServer = new DataInputStream(serverSocket.getInputStream());
@@ -44,12 +43,6 @@ public class RouterThread extends Thread {
         msgClient = dataInputStreamClient.readUTF();
         System.out.println("Client Said: "+msgClient);
         dataOutputStreamServer.writeUTF(msgClient);
-
-
-
-
-        // Let Client know Server is Ready.
-
     }
 
     public void run(){
@@ -71,11 +64,12 @@ public class RouterThread extends Thread {
             System.out.println("Client says: "+msgClient);
 
             // Let server know you're ready
-            dataOutputStreamServer.writeUTF("ready_for_action");
+            dataOutputStreamServer.writeUTF("ready for action");
             System.out.println("Waiting for message from Server.");
 
             // message from server to know what kind of action to pass.
             msgServer = dataInputStreamServer.readUTF();
+            System.out.println("Server: "+msgServer);
             if (msgServer.equals("message")) {
                 sendMessage();
             } else if (msgServer.equals("good_bye")) {
@@ -86,8 +80,22 @@ public class RouterThread extends Thread {
                 retrieveFile();
             } else if (msgServer.equals("sending_file")) {
                 sendFile();
+            } else if (msgServer.equals("login_info")) {
+                loginInfo();
             }
         }
+    }
+
+    private void loginInfo() throws IOException {
+        // tell client to send login info
+        dataOutputStreamClient.writeUTF("login_info");
+
+        //receive login info
+        String machineInfo = dataInputStreamClient.readUTF();
+        System.out.println("Client: "+machineInfo);
+
+        //pass login info
+        dataOutputStreamServer.writeUTF(machineInfo);
     }
 
     private void retrieveFile() throws IOException {

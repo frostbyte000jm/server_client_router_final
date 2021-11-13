@@ -8,10 +8,12 @@ import com.threads.ServerRouterThread;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class TCPServerRouter {
     //declarations
-    MachineContainer machineContainer;
+    private ArrayList<MachineContainer> arrServerContainer;
+    private MachineContainer machineContainer;
 
     public static void main (String[] args) throws IOException {
         // Set static Port Number
@@ -34,19 +36,20 @@ public class TCPServerRouter {
     }
     private void waitForConnection(MachineContainer machineContainer) throws IOException {
         //declarations
+        this.arrServerContainer = new ArrayList<MachineContainer>();
         this.machineContainer = machineContainer;
         int portNum = machineContainer.getPortNum();
         ServerSocket serverSocket = null;
         Socket socket = null;
         boolean doRun = true;
 
-        while(doRun){
+        while(doRun) {
             //set up ServerSocket and wait on port ????
             try {
                 serverSocket = new ServerSocket(portNum);
-                System.out.println("Router: "+ machineContainer.getLocalHostName() +" is listening on port: "+ portNum);
+                System.out.println("Router: " + machineContainer.getLocalHostName() + " is listening on port: " + portNum);
             } catch (IOException e) {
-                System.err.println("Could not listen on port: "+ portNum +".");
+                System.err.println("Could not listen on port: " + portNum + ".");
                 System.exit(1);
             }
 
@@ -54,6 +57,7 @@ public class TCPServerRouter {
             System.out.println("Waiting for Connection...");
             try {
                 socket = serverSocket.accept();
+                serverSocket.close();
             } catch (IOException e) {
                 doRun = false;
                 System.err.println("Unable to accept a connection.");
@@ -61,9 +65,51 @@ public class TCPServerRouter {
             }
 
             ServerRouterThread serverRouterThread = new ServerRouterThread(socket, this);
-            RouterThread routerThread = new RouterThread(clientSocket,this);
-            routerThread.start();
-
+            serverRouterThread.start();
             System.out.println("Thread Created");
+        }
+    }
+
+    public boolean addServer(String machineInfo) {
+        //check to see server already exist. If so end
+        for (int i = 0; i < arrServerContainer.size(); i++){
+            String instServer = arrServerContainer.get(i).getMachineInfo();
+            if (machineInfo == instServer){
+                return false;
+            }
+        }
+        //if not add machine
+        MachineContainer machineContainer = new MachineContainer();
+        machineContainer.setMachineInfo(machineInfo);
+        arrServerContainer.add(machineContainer);
+        return true;
+    }
+
+    public boolean removeServer(String machineInfo) {
+        //Loop through machines
+        for (int i = 0; i < arrServerContainer.size(); i++){
+            String instServer = arrServerContainer.get(i).getMachineInfo();
+            //find machine
+            if (machineInfo == instServer){
+                //remove machine
+                arrServerContainer.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getServerList(String machineInfo){
+        //This will return a list of Servers, excluding the one asking.
+        String servers = arrServerContainer.get(0).getMachineInfo();;
+
+        // if there is more than one server concat them with **
+        for (int i = 1; i < arrServerContainer.size(); i++){
+            String instServer = arrServerContainer.get(i).getMachineInfo();
+            if (machineInfo != instServer){
+                servers = servers +"**"+ instServer;
+            }
+        }
+        return servers;
     }
 }

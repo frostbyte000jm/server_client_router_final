@@ -9,52 +9,72 @@ import java.net.Socket;
 
 public class ServerThread extends Thread{
     //declarations
-    TCPServer tcpServer;
-    DataOutputStream dataOutputStream;
-    DataInputStream dataInputStream;
-    MachineContainer machineContainer;
+    private TCPServer tcpServer;
+    private DataOutputStream dataOutputStream;
+    private DataInputStream dataInputStream;
+    private MachineContainer machineContainer;
+    private String whoConnected;
 
     public ServerThread(Socket routerSocket, TCPServer tcpServer) throws IOException {
         this.tcpServer = tcpServer;
 
-        // Connect to Server
+        // Connect to Incoming
         System.out.println("Connection established.");
+
+        //setup input and output stream
         dataOutputStream = new DataOutputStream(routerSocket.getOutputStream());
         dataInputStream = new DataInputStream(routerSocket.getInputStream());
 
+        //handshake Router
+        dataOutputStream.writeUTF("Hello Who is Calling?");
+        String message = dataInputStream.readUTF();
+        System.out.println("Router Said: "+message);
 
+        //Who is Connected
+        this.whoConnected = message;
+
+        //finish handshake
+        message = dataInputStream.readUTF();
+        System.out.println("Router Said: "+message);
     }
 
     public void run(){
+        if (whoConnected.equals("__Client__")) {
+            try {
+                newClientInfo();
+            } catch (IOException e) {
+                System.out.println("ServerThread - Unable to create new Client");
+                e.printStackTrace();
+            }
+        } else if (whoConnected.equals("__Server__")) {
 
+        }
     }
 
     private void newClientInfo() throws IOException {
-        //ask client for information
-        dataOutputStream.writeUTF("Ask Client for Machine Info.");
 
-        String greetingsClient = dataInputStream.readUTF();
-        System.out.println("Router Said: "+greetingsClient);
-        dataOutputStream.writeUTF("Hello Router, Who is connecting?");
-        String clientInfo = dataInputStream.readUTF();
-        System.out.println(clientInfo);
+        while (true){
+            //ask client for information
+            dataOutputStream.writeUTF("login_info");
 
-        //take client info and turn it into a container.
-        machineContainer = new MachineContainer();
-        String[] arrClientInfo = clientInfo.split("|",0);
-        machineContainer.setLocalHostName(arrClientInfo[0]);
-        machineContainer.setLocalIPAddress(arrClientInfo[1]);
-        machineContainer.setExternalIPAddress(arrClientInfo[2]);
-        machineContainer.setUserName(arrClientInfo[3]);
-        machineContainer.setPortNum(Integer.parseInt(arrClientInfo[4]));
-        System.out.println(machineContainer.getMachineInfo());
+            //receive reply form client
+            String clientInfo = dataInputStream.readUTF();
+            System.out.println("Router: "+clientInfo);
 
-        tcpServer.addClient(machineContainer);
+            //take client info and turn it into a container.
+            Boolean doSuccess = tcpServer.addClient(clientInfo);
+            if (doSuccess){
+                break;
+            } else {
+                sendMessage("This username is taken. try again.");
+            }
+        }
+
+        //continue to new connection
+        newConnection();
     }
 
     private void newConnection() throws IOException {
-        dataOutputStream.writeUTF("Hello Router, tell Client Hello.");
-
         // send opening message
         String message = "\n\nWelcome to the internet\n" +
                 "Have a look around\n" +

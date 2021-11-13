@@ -6,6 +6,8 @@ import com.staticFields.settingsForServer;
 import com.threads.RouterThread;
 import com.threads.ServerThread;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,7 +17,6 @@ import java.util.Scanner;
 public class TCPServer {
     //declarations
     private ArrayList<MachineContainer> arrClientContainer;
-    private ArrayList<MachineContainer> arrServerContainer;
     private int portNum;
     private MachineContainer machineContainer;
 
@@ -38,17 +39,18 @@ public class TCPServer {
     private void Login(MachineContainer machineContainer) throws IOException {
         //declarations
         Scanner scanner = new Scanner(System.in);
-        arrServerContainer = new ArrayList<MachineContainer>();
 
         //Setup Server
         System.out.println("Enter Server Name:");
-        String username = scanner.nextLine();
+        //String username = scanner.nextLine();
+        String username = "Server01";
         machineContainer.setUserName(username);
         System.out.println("Enter your Port Number:");
         int portNum;
         while (true) {
             try {
-                portNum = Integer.parseInt(scanner.nextLine());
+                //portNum = Integer.parseInt(scanner.nextLine());
+                portNum = 5566;
                 break;
             } catch (NumberFormatException e) {
                 System.out.println("Please enter your Port Number: ");
@@ -61,7 +63,9 @@ public class TCPServer {
         this.machineContainer = machineContainer;
 
         //register server to serverRouter
+        registerServer();
 
+        //Hold for connection
         waitForConnection();
     }
 
@@ -72,9 +76,8 @@ public class TCPServer {
         Socket routerSocket = null;
         arrClientContainer = new ArrayList<MachineContainer>();
 
-
+        //set up ServerSocket and wait on port ????
         while(doRun){
-            //set up ServerSocket and wait on port ????
             try {
                 serverSocket = new ServerSocket(portNum);
                 System.out.println("Server: "+machineContainer.getLocalHostName()+" is listening on port: "+ portNum);
@@ -87,6 +90,7 @@ public class TCPServer {
             System.out.println("Waiting for Connection...");
             try {
                 routerSocket = serverSocket.accept();
+                serverSocket.close();
             } catch (IOException e) {
                 doRun = false;
                 System.err.println("Server is unable to accept a connection.");
@@ -99,19 +103,100 @@ public class TCPServer {
         }
     }
 
-    public void addClient(MachineContainer machineContainer){
-        arrClientContainer.add(machineContainer);
-    }
+    private Socket callServerRouter() throws IOException {
+        //declaration
+        Scanner scanner = new Scanner(System.in);
 
-    public void addServer(MachineContainer machineContainer){
-        arrServerContainer.add(machineContainer);
-    }
-
-    public void yellClients(){
-        System.out.println("trying to yell");
-        for (MachineContainer clientContainer: arrClientContainer) {
-            String s = clientContainer.getMachineInfo();
-            System.out.println(s);
+        // who are you connecting to?
+        System.out.println("Router IP Address:");
+        //String routerIP = scanner.nextLine();
+        String routerIP = "127.0.1.1";
+        System.out.println("Port Number for Router:");
+        int routerPortNum;
+        while (true){
+            try{
+                //routerPortNum = Integer.parseInt(scanner.nextLine());
+                routerPortNum = 5555;
+                break;
+            } catch (NumberFormatException e){
+                System.out.println("Please enter your Port Number: ");
+            }
         }
+        System.out.println("Connecting to "+routerIP+" through port number: "+routerPortNum);
+
+        //Connect to Router and setup input and output streams
+        Socket socket = new Socket(routerIP,routerPortNum);
+        return socket;
+    }
+
+    private void registerServer() throws IOException {
+        //call serverRouter
+        Socket socket = callServerRouter();
+
+        //register machine
+        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+        String message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF("Register_Server");
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        String machineInfo = machineContainer.getMachineInfo();
+        dataOutputStream.writeUTF(machineInfo);
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+
+        //hangup
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF("good_bye");
+        socket.close();
+    }
+
+    public boolean addClient(String machineInfo){
+        //check to see username already exist. If so end
+        MachineContainer machineContainer = new MachineContainer();
+        machineContainer.setMachineInfo(machineInfo);
+        String incUserName = machineContainer.getUserName();
+
+        //See if taken
+        for (int i = 0; i < arrClientContainer.size(); i++){
+            String userName = arrClientContainer.get(i).getUserName();
+            if (incUserName == userName){
+                return false;
+            }
+        }
+
+        //if not add machine
+        arrClientContainer.add(machineContainer);
+        return true;
+    }
+
+    public boolean removeClient(String machineInfo) {
+        //Loop through clients
+        for (int i = 0; i < arrClientContainer.size(); i++){
+            String instServer = arrClientContainer.get(i).getMachineInfo();
+            //find client
+            if (machineInfo == instServer){
+                //remove client
+                arrClientContainer.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getClientList(String machineInfo){
+        //This will return a list of Clients, excluding the one asking.
+        String clients = arrClientContainer.get(0).getMachineInfo();;
+
+        // if there is more than one server concat them with **
+        for (int i = 1; i < arrClientContainer.size(); i++){
+            String instServer = arrClientContainer.get(i).getMachineInfo();
+            if (machineInfo != instServer){
+                clients = clients +"**"+ instServer;
+            }
+        }
+        return clients;
     }
 }

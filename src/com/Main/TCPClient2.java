@@ -2,14 +2,13 @@ package com.Main;
 
 import com.classes.MachineContainer;
 import com.classes.ProcessComputerInfo;
-import com.threads.ClientThreadListen;
 
 import java.awt.*;
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
 import java.util.Scanner;
 
-public class TCPClient {
+public class TCPClient2 {
     //declarations
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
@@ -28,7 +27,7 @@ public class TCPClient {
         machineContainer.setLocalIPAddress(processComputerInfo.getLocalIPAddress());
         machineContainer.setExternalIPAddress(processComputerInfo.getExternalIP());
 
-        new TCPClient().connectToRouter(machineContainer);
+        new TCPClient2().connectToRouter(machineContainer);
     }
 
     private void connectToRouter(MachineContainer machineContainer) throws IOException {
