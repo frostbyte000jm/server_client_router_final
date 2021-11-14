@@ -2,21 +2,23 @@ package com.threads;
 
 import com.Main.TCPServer;
 import com.classes.MachineContainer;
-import com.staticFields.settingsForServer;
+import com.staticFields.SettingsForServer;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Objects;
 
 public class ServerThread extends Thread{
     //declarations
     private TCPServer tcpServer;
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
-    private MachineContainer machineContainer;
-    private String whoConnected;
+    private String whoConnected, clientMachineInfo, serverMachineInfo;
 
     public ServerThread(Socket routerSocket, TCPServer tcpServer) throws IOException {
         this.tcpServer = tcpServer;
+        this.serverMachineInfo = tcpServer.getMachineInfo();
 
         // Connect to Incoming
         System.out.println("Connection established.");
@@ -38,6 +40,7 @@ public class ServerThread extends Thread{
         System.out.println("Router Said: "+message);
     }
 
+    //The Thread will asks who is connected and get them started with the correct interface
     public void run(){
         if (whoConnected.equals("__Client__")) {
             try {
@@ -51,8 +54,8 @@ public class ServerThread extends Thread{
         }
     }
 
+    //When a client is connecting, we need to get their username and computer info
     private void newClientInfo() throws IOException {
-
         while (true){
             //ask client for information
             dataOutputStream.writeUTF("login_info");
@@ -64,6 +67,7 @@ public class ServerThread extends Thread{
             //take client info and turn it into a container.
             Boolean doSuccess = tcpServer.addClient(clientInfo);
             if (doSuccess){
+                clientMachineInfo = clientInfo;
                 break;
             } else {
                 sendMessage("This username is taken. try again.");
@@ -71,50 +75,7 @@ public class ServerThread extends Thread{
         }
 
         //continue to new connection
-        newConnection();
-    }
-
-    private void newConnection() throws IOException {
-        // send opening message
-        String message = "\n\nWelcome to the internet\n" +
-                "Have a look around\n" +
-                "Anything that brain of yours can think of can be found\n" +
-                "We've got mountains of content\n" +
-                "Some better, some worse\n" +
-                "If none of it's of interest to you, you'd be the first\n\n "+
-                "Press enter to continue.";
-        sendMessage(message);
-
-        // wait for router to say ready
-        String msg = dataInputStream.readUTF();
-        System.out.println("Router says: "+msg);
-
-        // wait for it.
-        requestReply();
-
-        // Wait for Client to ask the Router to ask the Server for something.
-        sendAction("welcome_msg");
-    }
-
-    private void continuedConnection() throws IOException {
-        // what are you looking for.
-        dataOutputStream.writeUTF("what do you need?");
-
-        // wait for client reply
-        String msg = requestReply();
-
-        // get them the thing
-        if (msg == "file") {
-            //return list
-        } else if (msg == "client") {
-            //search and return chat room request
-        }
-
-        // end server loop
-        //doRun = false;
-
-        // inform Router to inform client we are disconnecting
-        dataOutputStream.writeUTF("good_bye");
+        startService();
     }
 
     /******************************************************
@@ -136,14 +97,10 @@ public class ServerThread extends Thread{
             startEcho();
         } else if (action.equals("upper_txt_doc")) {
             uppercaseTextFile();
-        } else if (action.equals("send_video_tny")) {
-            sendVideoFile("tiny");
-        } else if (action.equals("send_video_sm")) {
-            sendVideoFile("small");
-        } else if (action.equals("send_video_med")) {
-            sendVideoFile("med");
-        } else if (action.equals("send_video_lg")) {
-            sendVideoFile("large");
+        } else if (action.equals("send_file")) {
+            sendFileChoice();
+        } else if (action.equals("request_file")) {
+            receiveFileToServer();
         } else if (action.equals("good_bye")) {
             goodbye();
         }
@@ -174,13 +131,35 @@ public class ServerThread extends Thread{
     }
 
     private String makeServerDirectory(){
-        File directory = new File(settingsForServer.getTempFolder());
+        SettingsForServer settingsForServer = new SettingsForServer();
+        File directory = new File(settingsForServer.getFolder());
         if (!directory.exists())
-            directory.mkdir(); //if this ever moves, change it to mkdirs
+            directory.mkdirs();
         return directory.getPath();
     }
 
-    private File retrieveFile() throws IOException {
+    private String makeTempServerDirectory(){
+        SettingsForServer settingsForServer = new SettingsForServer();
+        String tempFolder = settingsForServer.getFolder()+File.separator+"Temp";
+        File directory = new File(tempFolder);
+        if (!directory.exists())
+            directory.mkdirs();
+        return directory.getPath();
+    }
+
+    private void removeTempServerDirectory(){
+        //remove files from TempServer
+        SettingsForServer settingsForServer = new SettingsForServer();
+        String tempFolder = settingsForServer.getFolder()+File.separator+"Temp";
+        File fileDirectory = new File(tempFolder);
+        for (File fileDel : Objects.requireNonNull(fileDirectory.listFiles())) {
+            String strFile = fileDel.getAbsolutePath();
+            System.out.println("f: " + strFile);
+            fileDel.delete();
+        }
+    }
+
+    private File retrieveFile(Boolean doTemp) throws IOException {
         //declaration
         long timeDisplay;
 
@@ -214,8 +193,15 @@ public class ServerThread extends Thread{
         // convert file name to append "_upper" at the end
         String fileName = new String(fileNameBytes);
 
+        // Create folder for File
+        String directory = "";
+        if (doTemp){
+            directory = makeTempServerDirectory();
+        } else {
+            directory = makeServerDirectory();
+        }
+
         // Create File
-        String directory = makeServerDirectory();
         File file = new File(directory+File.separator+fileName);
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         fileOutputStream.write(fileBytes);
@@ -277,6 +263,45 @@ public class ServerThread extends Thread{
     }
 
     /***************************************************
+     *             Contact Other Servers
+     ***************************************************/
+    private Socket contactServer(MachineContainer machineContainer) throws IOException {
+        String ipAddress = machineContainer.getLocalIPAddress();
+        int portNum = machineContainer.getPortNum();
+
+        Socket socket = new Socket(ipAddress, portNum);
+        return socket;
+    }
+
+
+
+    /***************************************************
+     *             Server Router Services
+     ***************************************************/
+
+    private ArrayList<MachineContainer> getServers() throws IOException {
+        //set up connection to Server Router
+        Socket socket = tcpServer.connectServerRouter();
+        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+        //get servers
+        String message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF("Get_Server_List");
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF(serverMachineInfo);
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+
+        //set up list of servers
+        MachineContainer machineContainer = new MachineContainer();
+        ArrayList<MachineContainer> arrServers =  machineContainer.getMachineList(message);
+        return arrServers;
+    }
+
+    /***************************************************
      *                  Actions
      ***************************************************/
 
@@ -296,14 +321,33 @@ public class ServerThread extends Thread{
 
         sendMessage(message);
 
-        // declarations
-        String msg = "";
-
-        // end server loop
-        //doRun = false;
+        //remove client
+        tcpServer.removeClient(clientMachineInfo);
 
         // inform Router to inform client we are disconnecting
         dataOutputStream.writeUTF("good_bye");
+    }
+
+    private void startService() throws IOException {
+        // send opening message
+        String message = "\n\nWelcome to the internet\n" +
+                "Have a look around\n" +
+                "Anything that brain of yours can think of can be found\n" +
+                "We've got mountains of content\n" +
+                "Some better, some worse\n" +
+                "If none of it's of interest to you, you'd be the first\n\n "+
+                "Press enter to continue.";
+        sendMessage(message);
+
+        // wait for router to say ready
+        String msg = dataInputStream.readUTF();
+        System.out.println("Router says: "+msg);
+
+        // wait for it.
+        requestReply();
+
+        // Wait for Client to ask the Router to ask the Server for something.
+        sendAction("welcome_msg");
     }
 
     private void sendWelcomeMessage() throws IOException {
@@ -311,10 +355,8 @@ public class ServerThread extends Thread{
         String message = "\n\nEnter number of what you want to do:\n"+
                 "1) Echo\n" +
                 "2) Uppercase Text File\n" +
-                "3) Send Tiny Video File\n" +
-                "4) Send Small Video File\n" +
-                "5) Send Medium Video File\n" +
-                "6) Send Large Video File\n" +
+                "3) Request File from Server\n" +
+                "4) Send File to Server\n"+
                 "7) Goodbye";
 
         // Send message
@@ -332,13 +374,9 @@ public class ServerThread extends Thread{
         } else if (idx == 2){
             sendAction("upper_txt_doc");
         } else if (idx == 3) {
-            sendAction("send_video_tny");
+            sendAction("send_file");
         } else if (idx == 4) {
-            sendAction("send_video_sm");
-        } else if (idx == 5) {
-            sendAction("send_video_med");
-        } else if (idx == 6) {
-            sendAction("send_video_lg");
+            sendAction("request_file");
         } else if (idx == 7) {
             sendAction("good_bye");
         } else if (idx == 8) {
@@ -399,12 +437,12 @@ public class ServerThread extends Thread{
         sendMessage(message);
 
         //set action to upper text doc
-        File file = retrieveFile();
+        File file = retrieveFile(true);
 
         //create second file
         String fileNameRevised = file.getName();
         fileNameRevised = fileNameRevised.replace(".txt","_upper.txt");
-        String directory = makeServerDirectory();
+        String directory = makeTempServerDirectory();
         File fileRevised = new File(directory+File.separator+fileNameRevised);
 
         //Create Buffer and Printer
@@ -426,43 +464,61 @@ public class ServerThread extends Thread{
         // send File back
         sendFile(fileRevised);
 
-        //remove files from TempServer
-        File fileDirectory = new File(settingsForServer.getTempFolder());
-        for (File fileDel : fileDirectory.listFiles()) {
-            String strFile = fileDel.getAbsolutePath();
-            System.out.println("f: " + strFile);
-            fileDel.delete();
-        }
+        //clean up Temp folder
+        removeTempServerDirectory();
 
         sendAction("welcome_msg");
     }
 
-    // revise this to send a file.
-    private void sendVideoFile(String size) throws IOException {
-        // this will send a small, medium, or large video file.
-
+    private void sendFileChoice() throws IOException {
         // create message
-        String message = "Excellent Choice Human. The Server will compress the file " +
-                "and it will be on its way shortly. ";
+        String message = "Human!, welcome. Please look though my goods and select the file you wish to download" +
+                "Once selected, the file will be compressed and sent to you. \n\n";
         sendMessage(message);
 
-        // choose the correct file and send.
-        File file;
-        if (size.equals("tiny")){
-            file = new File("src/data/video_tiny.avi");
-            sendFile(file);
-        } else if (size.equals("small")){
-            file = new File("src/data/video_sm.mp4");
-            sendFile(file);
-        } else if (size.equals("med")){
-            file = new File("src/data/video_med.mp4");
-            sendFile(file);
-        } else if (size.equals("large")){
-            file = new File("src/data/video_lg.avi");
-            sendFile(file);
+        // gather a list of files, indicate which server they are on, and send that list to the client.
+        String directory = tcpServer.getLocalFolder();
+        File directoryPath = new File(directory);
+        String[] contents = directoryPath.list();
+
+        StringBuilder sbMessage = new StringBuilder();
+
+        for (int i = 0; i < contents.length; i++) {
+            sbMessage.append(i+1).append(": ").append(contents[i]).append("\n");
+            System.out.println("contents[i]: "+contents[i]);
         }
 
-        //Compress and send the file.
+        sendMessage(sbMessage.toString());
+
+        //accept choice from client
+        String reply = requestReply();
+        int choice = Integer.parseInt(reply) - 1;
+        System.out.println("Client choose: "+choice);
+
+        //go get the file and send
+        File file = new File(directory+File.separator+contents[choice]);
+        System.out.println("File: "+file.getAbsolutePath());
+        sendFile(file);
+
+        //return to welcome screen
+        sendAction("welcome_msg");
+    }
+
+    private void receiveFileToServer() throws IOException {
+        // create message
+        String message = "Human!, thank you. I accept this gift and will add this file to my library for future downloads.";
+        sendMessage(message);
+
+        // Create File
+        File file = retrieveFile(false);
+
+        // tell user it has been saved.
+        message = "File has been added to the library.";
+        System.out.println("Letting client know file has been added");
+        sendMessage(message);
+
+        //return to welcome screen
+        System.out.println("Sending Client to Welcome");
         sendAction("welcome_msg");
     }
 }

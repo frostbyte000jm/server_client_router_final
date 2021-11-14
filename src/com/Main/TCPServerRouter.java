@@ -14,6 +14,7 @@ public class TCPServerRouter {
     //declarations
     private ArrayList<MachineContainer> arrServerContainer;
     private MachineContainer machineContainer;
+    private String machineInfo;
 
     public static void main (String[] args) throws IOException {
         // Set static Port Number
@@ -39,6 +40,7 @@ public class TCPServerRouter {
         this.arrServerContainer = new ArrayList<MachineContainer>();
         this.machineContainer = machineContainer;
         int portNum = machineContainer.getPortNum();
+        machineInfo = machineContainer.getMachineInfo();
         ServerSocket serverSocket = null;
         Socket socket = null;
         boolean doRun = true;
@@ -74,7 +76,7 @@ public class TCPServerRouter {
         //check to see server already exist. If so end
         for (int i = 0; i < arrServerContainer.size(); i++){
             String instServer = arrServerContainer.get(i).getMachineInfo();
-            if (machineInfo == instServer){
+            if (machineInfo.equals(instServer)){
                 return false;
             }
         }
@@ -90,7 +92,7 @@ public class TCPServerRouter {
         for (int i = 0; i < arrServerContainer.size(); i++){
             String instServer = arrServerContainer.get(i).getMachineInfo();
             //find machine
-            if (machineInfo == instServer){
+            if (machineInfo.equals(instServer)){
                 //remove machine
                 arrServerContainer.remove(i);
                 return true;
@@ -101,15 +103,26 @@ public class TCPServerRouter {
 
     public String getServerList(String machineInfo){
         //This will return a list of Servers, excluding the one asking.
-        String servers = arrServerContainer.get(0).getMachineInfo();;
+        StringBuilder servers = new StringBuilder();
+        boolean doFirst = true;
 
         // if there is more than one server concat them with **
-        for (int i = 1; i < arrServerContainer.size(); i++){
+        for (int i = 0; i < arrServerContainer.size(); i++){
             String instServer = arrServerContainer.get(i).getMachineInfo();
-            if (machineInfo != instServer){
-                servers = servers +"**"+ instServer;
+            if (!machineInfo.equals(instServer) ){
+                if (doFirst){
+                    servers.append(instServer);
+                    doFirst = false;
+                } else {
+                    servers.append(":").append(instServer);
+                }
             }
         }
-        return servers;
+
+        return servers.toString();
+    }
+
+    public String getMachineInfo(){
+        return machineInfo;
     }
 }

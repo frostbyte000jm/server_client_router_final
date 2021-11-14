@@ -138,6 +138,7 @@ public class TCPClient {
         //Loop and Wait for messages.
         boolean doRun = true;
         while (doRun){
+            System.out.println("Waiting for action");
             dataOutputStream.writeUTF("ready for action");
             String action = dataInputStream.readUTF();
             if (action.equals("message")) {
@@ -163,6 +164,7 @@ public class TCPClient {
 
     private void sendMessage(Scanner scanner, DataOutputStream dataOutputStream) throws IOException {
         //routine to let user create a message and send it
+        System.out.println("Sending Message");
         System.out.print(">> ");
         String msg = scanner.nextLine();
         dataOutputStream.writeUTF(msg);
@@ -170,12 +172,14 @@ public class TCPClient {
 
     private void displayMessage(DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
         // Routine for displaying a message
-        dataOutputStream.writeUTF("ready");
+        System.out.println("Display Message");
+        dataOutputStream.writeUTF("ready to Display Message");
         String message = dataInputStream.readUTF();
         System.out.println(message);
     }
 
     private void sendFile(Scanner scanner, DataOutputStream dataOutputStream) throws IOException {
+        System.out.println("Sending File Start");
         //declaration
         long timeDisplay;
 
@@ -229,6 +233,7 @@ public class TCPClient {
         System.out.println("Time to send File: "+timeDisplay);
         timeDisplay = timeSentEnd - timeStart;
         System.out.println("Total time to send File: "+ timeDisplay);
+        System.out.println("Sending File End");
     }
 
     private void receiveFile(Scanner scanner, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
@@ -252,7 +257,7 @@ public class TCPClient {
         }
 
         //routine for receiving a file and opening it.
-        dataOutputStream.writeUTF("ready");
+        dataOutputStream.writeUTF("ready to Receive File");
 
         // wait to receive File Name Bytes
         int fileNameBytesLength = dataInputStream.readInt();

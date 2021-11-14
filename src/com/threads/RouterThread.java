@@ -4,8 +4,6 @@ import java.io.*;
 import java.net.Socket;
 
 import com.Main.TCPRouter;
-import com.classes.MachineContainer;
-import com.staticFields.settingsForRouter;
 
 public class RouterThread extends Thread {
     //declarations

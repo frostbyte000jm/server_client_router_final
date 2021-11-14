@@ -1,9 +1,9 @@
 package com.Main;
 
+import com.classes.IPAddressAndPortContainer;
 import com.classes.MachineContainer;
 import com.classes.ProcessComputerInfo;
-import com.staticFields.settingsForServer;
-import com.threads.RouterThread;
+import com.staticFields.SettingsForServer;
 import com.threads.ServerThread;
 
 import java.io.DataInputStream;
@@ -13,12 +13,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.Set;
 
 public class TCPServer {
     //declarations
     private ArrayList<MachineContainer> arrClientContainer;
     private int portNum;
-    private MachineContainer machineContainer;
+    private MachineContainer machineContainer, serverRouterMachineContainer;
+    private IPAddressAndPortContainer serverRouterIPandPort;
+    private String localFolder;
 
     public static void main(String[] args) throws IOException {
         //Who am I?
@@ -39,21 +42,48 @@ public class TCPServer {
     private void Login(MachineContainer machineContainer) throws IOException {
         //declarations
         Scanner scanner = new Scanner(System.in);
+        SettingsForServer settingsForServer = new SettingsForServer();
 
         //Setup Server
-        System.out.println("Enter Server Name:");
-        //String username = scanner.nextLine();
-        String username = "Server01";
+        //  Server Name
+        System.out.println("Enter Server Name (leave bank for "+settingsForServer.getServerName()+"):");
+        String username = scanner.nextLine();
+        if (username.length() == 0){
+            username = settingsForServer.getServerName();
+        } else {
+            settingsForServer.setServerName(username);
+            System.out.println("Updated Server Name in Settings.");
+        }
         machineContainer.setUserName(username);
-        System.out.println("Enter your Port Number:");
+
+        //  Server Local Folder
+        System.out.println("Local Folder address (leave blank for "+settingsForServer.getFolder()+"):");
+        localFolder = scanner.nextLine();
+        if (localFolder.length() == 0){
+            localFolder = settingsForServer.getFolder();
+        } else {
+            settingsForServer.setFolder(localFolder);
+            System.out.println("Local Folder has been updated in Settings.\n" +
+                    "Please make sure this is a valid location.");
+        }
+
+        //  Server Port Number
+        System.out.println("Enter your Port Number (Leave Blank for "+settingsForServer.getPortNum()+"):");
         int portNum;
         while (true) {
             try {
-                //portNum = Integer.parseInt(scanner.nextLine());
-                portNum = 5566;
+                String strPortNum = scanner.nextLine();
+                if (strPortNum.length() == 0){
+                    portNum = settingsForServer.getPortNum();
+                } else {
+                    portNum = Integer.parseInt(strPortNum);
+                    settingsForServer.setPortNum(portNum);
+                    System.out.println("Port Number has been updated in settings.\n" +
+                            "Please Make sure this port number is valid");
+                }
                 break;
             } catch (NumberFormatException e) {
-                System.out.println("Please enter your Port Number: ");
+                System.out.println("Please enter your Port *Number*: ");
             }
         }
         machineContainer.setPortNum(portNum);
@@ -83,6 +113,7 @@ public class TCPServer {
                 System.out.println("Server: "+machineContainer.getLocalHostName()+" is listening on port: "+ portNum);
             } catch (IOException e) {
                 System.err.println("Could not listen on port: "+ portNum +".");
+                disconnectServerRouter();
                 System.exit(1);
             }
 
@@ -93,6 +124,7 @@ public class TCPServer {
                 serverSocket.close();
             } catch (IOException e) {
                 doRun = false;
+                disconnectServerRouter();
                 System.err.println("Server is unable to accept a connection.");
                 System.exit(1);
             }
@@ -103,25 +135,57 @@ public class TCPServer {
         }
     }
 
-    private Socket callServerRouter() throws IOException {
+    /***************************************************
+     *             Server Router Services
+     ***************************************************/
+
+    private void dialServerRouter() {
         //declaration
         Scanner scanner = new Scanner(System.in);
+        serverRouterIPandPort = new IPAddressAndPortContainer();
+        SettingsForServer settingsForServer = new SettingsForServer();
 
         // who are you connecting to?
-        System.out.println("Router IP Address:");
-        //String routerIP = scanner.nextLine();
-        String routerIP = "127.0.1.1";
-        System.out.println("Port Number for Router:");
+        //      Set IP Address of Server Router
+        System.out.println("Router IP Address (Leave Blank for "+settingsForServer.getServerRouterIPAddress()+"):");
+        String routerIP = scanner.nextLine();
+        if (routerIP.length() == 0){
+            routerIP = settingsForServer.getServerRouterIPAddress();
+        } else {
+            settingsForServer.setServerRouterIPAddress(routerIP);
+            System.out.println("Router IP Address has been revised in Settings.");
+        }
+
+        //      Set Port number of Server Router
+        System.out.println("Port Number for Router (Leave Blank for "+settingsForServer.getPortNumServerRouter()+"):");
         int routerPortNum;
         while (true){
-            try{
-                //routerPortNum = Integer.parseInt(scanner.nextLine());
-                routerPortNum = 5555;
+            try {
+                String strRouterPortNum = scanner.nextLine();
+                if (strRouterPortNum.length() == 0) {
+                    routerPortNum = settingsForServer.getPortNumServerRouter();
+                } else {
+                    routerPortNum = Integer.parseInt(strRouterPortNum);
+                    settingsForServer.setPortNumServerRouter(routerPortNum);
+                    System.out.println("Server Router Port Number has been updated in settings.\n" +
+                            "Please Make sure this port number is valid");
+                }
                 break;
             } catch (NumberFormatException e){
                 System.out.println("Please enter your Port Number: ");
             }
         }
+
+        //add to container
+        serverRouterIPandPort.IPAddress = routerIP;
+        serverRouterIPandPort.PortNum = routerPortNum;
+    }
+
+    public Socket connectServerRouter() throws IOException {
+        //declarations
+        String routerIP = serverRouterIPandPort.IPAddress;
+        int routerPortNum = serverRouterIPandPort.PortNum;
+
         System.out.println("Connecting to "+routerIP+" through port number: "+routerPortNum);
 
         //Connect to Router and setup input and output streams
@@ -131,7 +195,8 @@ public class TCPServer {
 
     private void registerServer() throws IOException {
         //call serverRouter
-        Socket socket = callServerRouter();
+        dialServerRouter();
+        Socket socket = connectServerRouter();
 
         //register machine
         DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -146,12 +211,42 @@ public class TCPServer {
         message = dataInputStream.readUTF();
         System.out.println("ServerRouter: "+message);
 
+        // get ServerRouter Info
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF("Get_ServerRouter_Info");
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        serverRouterMachineContainer = new MachineContainer();
+        serverRouterMachineContainer.setMachineInfo(message);
+
         //hangup
         message = dataInputStream.readUTF();
         System.out.println("ServerRouter: "+message);
         dataOutputStream.writeUTF("good_bye");
         socket.close();
     }
+
+    private void disconnectServerRouter() throws IOException {
+        //call serverRouter
+        Socket socket = connectServerRouter();
+
+        //register machine
+        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+        String message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF("Remove_Server");
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+        dataOutputStream.writeUTF(machineContainer.getMachineInfo());
+        message = dataInputStream.readUTF();
+        System.out.println("ServerRouter: "+message);
+    }
+
+    /***************************************************
+     *             Client Records
+     ***************************************************/
 
     public boolean addClient(String machineInfo){
         //check to see username already exist. If so end
@@ -162,7 +257,7 @@ public class TCPServer {
         //See if taken
         for (int i = 0; i < arrClientContainer.size(); i++){
             String userName = arrClientContainer.get(i).getUserName();
-            if (incUserName == userName){
+            if (incUserName.equals(userName)){
                 return false;
             }
         }
@@ -177,7 +272,7 @@ public class TCPServer {
         for (int i = 0; i < arrClientContainer.size(); i++){
             String instServer = arrClientContainer.get(i).getMachineInfo();
             //find client
-            if (machineInfo == instServer){
+            if (machineInfo.equals(instServer)){
                 //remove client
                 arrClientContainer.remove(i);
                 return true;
@@ -198,5 +293,21 @@ public class TCPServer {
             }
         }
         return clients;
+    }
+
+    /***************************************************
+     *             Machine Info
+     ***************************************************/
+
+    public MachineContainer getServerRouterMachineContainer(){
+        return serverRouterMachineContainer;
+    }
+
+    public String getMachineInfo(){
+        return machineContainer.getMachineInfo();
+    }
+
+    public String getLocalFolder() {
+        return localFolder;
     }
 }

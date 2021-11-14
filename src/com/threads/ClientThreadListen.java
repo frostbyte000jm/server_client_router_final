@@ -17,7 +17,7 @@ public class ClientThreadListen {
         while(doRun){
             String message = dataInputStream.readUTF();
             System.out.println(message);
-            if (message == "good_bye") {
+            if (message.equals("good_bye")) {
                 doRun = false;
             }
         }

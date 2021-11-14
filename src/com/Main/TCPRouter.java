@@ -2,7 +2,6 @@ package com.Main;
 
 import com.classes.MachineContainer;
 import com.classes.ProcessComputerInfo;
-import com.staticFields.settingsForRouter;
 import com.threads.RouterThread;
 
 import java.io.IOException;
@@ -65,7 +64,7 @@ public class TCPRouter {
         while (true) {
             try {
                 //portNumServer = Integer.parseInt(scanner.nextLine());
-                portNumServer = 5566;
+                portNumServer = 5556;
                 break;
             } catch (NumberFormatException e) {
                 System.out.println("Please enter your Port Number: ");

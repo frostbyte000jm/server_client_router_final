@@ -1,6 +1,7 @@
 package com.classes;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class MachineContainer implements Serializable {
     //declaration
@@ -24,13 +25,26 @@ public class MachineContainer implements Serializable {
         return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum+"|"+portNumToCall+"|"+isServer+"|"+isRouter+"|"+serverIPAddress+"|";
     }
 
+    //for external use only
+    public ArrayList<MachineContainer> getMachineList(String machines){
+        ArrayList<MachineContainer> arrMachines = new ArrayList<MachineContainer>();
+        String[] arrMachineInfo = machines.split(":");
+
+        for (int i = 0; i < arrMachineInfo.length; i++){
+            MachineContainer machineContainer = new MachineContainer();
+            machineContainer.setMachineInfo(arrMachineInfo[i]);
+            arrMachines.add(machineContainer);
+        }
+        return arrMachines;
+    }
+
     public void setMachineInfo(String machineInfo){
         String[] info = machineInfo.split("\\|");
-        System.out.println("Machine Container: ");
+        /*System.out.println("Machine Container: ");
 
         for (int i = 0; i < info.length; i++){
             System.out.println("Info["+i+"]: "+info[i]);
-        }
+        }*/
 
         this.localHostName = info[0];
         this.localIPAddress = info[1];

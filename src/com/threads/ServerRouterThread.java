@@ -50,8 +50,10 @@ public class ServerRouterThread extends Thread {
                 registerServer();
             } else if (message.equals("Remove_Server")) {
                 removeServer();
-            } else if (message.equals("Server_List")) {
+            } else if (message.equals("Get_Server_List")) {
                 serverList();
+            }  else if (message.equals("Get_ServerRouter_Info")) {
+                getMachineInfo();
             } else if (message.equals("good_bye")) {
                 System.out.println("good bye.");
                 doRun = false;
@@ -95,6 +97,10 @@ public class ServerRouterThread extends Thread {
         System.out.println("Server: "+message);
         String serverList = tcpServerRouter.getServerList(message);
         dataOutputStream.writeUTF(serverList);
+    }
+
+    private void getMachineInfo() throws IOException {
+        dataOutputStream.writeUTF(tcpServerRouter.getMachineInfo());
     }
 
 }

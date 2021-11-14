@@ -1,6 +1,6 @@
 package com.staticFields;
 
-public class settingsForRouter {
+public class SettingsForRouter {
     //static values
     private static int portNum = 5678;
     private static String serverIpAddress = "127.0.1.1";
