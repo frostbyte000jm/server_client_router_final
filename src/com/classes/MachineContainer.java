@@ -10,15 +10,15 @@ public class MachineContainer implements Serializable {
     private String serverIPAddress;
 
     public MachineContainer() {
-        this.localHostName = "_";
-        this.localIPAddress = "_";
-        this.externalIPAddress = "_";
-        this.userName = "_";
-        this.portNum = 0;
-        this.portNumToCall = 0;
-        this.isServer = 0;
-        this.isRouter = 0;
-        this.serverIPAddress = "_";
+        this.localHostName = "_";       //Name of machine
+        this.localIPAddress = "_";      //IP Addy of machine
+        this.externalIPAddress = "_";   //External IP addy of machine
+        this.userName = "_";            //Username of person accessing server
+        this.portNum = 0;               //Port Number Machine is listening on.
+        this.portNumToCall = 0;         //for Router to call Server
+        this.isServer = 0;              //is machine a server?
+        this.isRouter = 0;              //is machine a router?
+        this.serverIPAddress = "_";     //What is the IP address for a Router to call
     }
 
     public String getMachineInfo(){

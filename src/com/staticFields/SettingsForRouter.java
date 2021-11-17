@@ -1,16 +1,25 @@
 package com.staticFields;
 
+import java.io.File;
+
 public class SettingsForRouter {
-    //static values
-    private static int portNum = 5678;
-    private static String serverIpAddress = "127.0.1.1";
-    private static int serverPortNum = 5555;
-    private static int threadMax = 3;
+    //static values Server
+    private int portNum = 5678;
+    private String routerName = "Router01";
+    private String serverIPAddress = "127.0.1.1";
+    private int serverPortNum = 5556;
+    private final int threadMax = 10;
 
-    //gets
-    public static int getPortNum() { return portNum; }
-    public static String getServerIpAddress() { return serverIpAddress; }
-    public static int getServerPortNum() { return serverPortNum; }
-    public static int getThreadMax() { return threadMax; }
+    //gets server
+    public int getPortNum() { return portNum; }
+    public String getRouterName() { return routerName; }
+    public String getServerIPAddress() { return serverIPAddress; }
+    public int getServerPortNum() { return serverPortNum; }
+    public int getThreadMax() { return threadMax; }
 
+    //sets server
+    public void setPortNum(int portNum) { this.portNum = portNum; }
+    public void setRouterName(String routerName) { this.routerName = routerName; }
+    public void setServerIPAddress(String serverIPAddress) { this.serverIPAddress = serverIPAddress; }
+    public void setServerPortNum(int serverPortNum) { this.serverPortNum = serverPortNum; }
 }

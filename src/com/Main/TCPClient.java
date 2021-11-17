@@ -1,8 +1,8 @@
 package com.Main;
 
+import com.ClientChatRoom.ClientChatRoom;
 import com.classes.MachineContainer;
 import com.classes.ProcessComputerInfo;
-import com.threads.ClientThreadListen;
 
 import java.awt.*;
 import java.io.*;
@@ -88,89 +88,37 @@ public class TCPClient {
         dataOutputStream.writeUTF("Hello Router.");
 
         //Wait for handshake Server
-        message = dataInputStream.readUTF();
+        message = dataInputStream.readUTF();    //Hello Who is Calling?
         System.out.println("Router: "+message);
         dataOutputStream.writeUTF("__Client__");
     }
 
-    public void login() throws IOException {
-        // who are you?
-        System.out.println("Enter UserName:");
-        String username = scanner.nextLine();
-        machineContainer.setUserName(username);
-        System.out.println("Enter your Port Number:");
-        int portNum;
-        while (true) {
-            try {
-                portNum = Integer.parseInt(scanner.nextLine());
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter your Port Number: ");
-            }
-        }
-        machineContainer.setPortNum(portNum);
-
-        //send machine info
-        String machineInfo = machineContainer.getMachineInfo();
-        System.out.println("Sending: "+machineInfo);
-        dataOutputStream.writeUTF(machineInfo);
-        //connectToRouter(machineContainer, scanner);
-    }
-
-
-
-    private void sendComputerInfo(Socket socket, MachineContainer machineContainer, DataInputStream dataInputStream,
-                                  DataOutputStream dataOutputStream) throws IOException {
-
-        // send greetings to the Router/Server
-        dataOutputStream.writeUTF("Hello Router");  // Say Hi
-        String greetings = dataInputStream.readUTF();   // Expect Router to say Hi
-        System.out.println("Router Said: "+ greetings);
-        greetings = dataInputStream.readUTF();          // Expect Server to ask who you are.
-        System.out.println("Router Said: "+greetings);
-
-        //Send Machine information
-        String machineInfo = machineContainer.getMachineInfo();
-        dataOutputStream.writeUTF(machineInfo);
-    }
+    /***************************************************
+     *                  Functions
+     ***************************************************/
 
     private void waitForMessages() throws IOException {
         //Loop and Wait for messages.
         boolean doRun = true;
         while (doRun){
-            System.out.println("Waiting for action");
+            System.out.println("Debug: waitForMessages");
             dataOutputStream.writeUTF("ready for action");
             String action = dataInputStream.readUTF();
-            if (action.equals("message")) {
-                displayMessage(dataOutputStream, dataInputStream);
-            } else if (action.equals("good_bye")) {
-                doRun = goodBye();
-            } else if (action.equals("request_reply")) {
-                sendMessage(scanner, dataOutputStream);
-            } else if (action.equals("retrieve_file")) {
-                sendFile(scanner, dataOutputStream);
-            } else if (action.equals("sending_file")) {
-                receiveFile(scanner, dataOutputStream, dataInputStream);
-            } else if (action.equals("login_info")) {
-                login();
+            switch (action) {
+                case "message_server_to_client" -> displayMessage();
+                case "request_reply_client_to_server" -> sendMessage();
+                case "file_client_to_server" -> sendFile();
+                case "file_server_to_client" -> receiveFile();
+
+                //      **** Client Functions ****
+                case "good_bye" -> doRun = goodBye();
+                case "login_info" -> login();
+                case "client_chat_room" -> chatRoomStart();
             }
         }
     }
 
-    private boolean goodBye() {
-        // Closes Socket sends back to Login Screen
-        return false;
-    }
-
-    private void sendMessage(Scanner scanner, DataOutputStream dataOutputStream) throws IOException {
-        //routine to let user create a message and send it
-        System.out.println("Sending Message");
-        System.out.print(">> ");
-        String msg = scanner.nextLine();
-        dataOutputStream.writeUTF(msg);
-    }
-
-    private void displayMessage(DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+    private void displayMessage() throws IOException {
         // Routine for displaying a message
         System.out.println("Display Message");
         dataOutputStream.writeUTF("ready to Display Message");
@@ -178,7 +126,15 @@ public class TCPClient {
         System.out.println(message);
     }
 
-    private void sendFile(Scanner scanner, DataOutputStream dataOutputStream) throws IOException {
+    private void sendMessage() throws IOException {
+        //routine to let user create a message and send it
+        System.out.println("Sending Message");
+        System.out.print(">> ");
+        String msg = scanner.nextLine();
+        dataOutputStream.writeUTF(msg);
+    }
+
+    private void sendFile() throws IOException {
         System.out.println("Sending File Start");
         //declaration
         long timeDisplay;
@@ -236,7 +192,7 @@ public class TCPClient {
         System.out.println("Sending File End");
     }
 
-    private void receiveFile(Scanner scanner, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+    private void receiveFile() throws IOException {
         //declaration
         long timeDisplay;
 
@@ -297,9 +253,76 @@ public class TCPClient {
         System.out.println("Time to convert file and complete process: "+timeDisplay);
 
         //Open File
-        if (file.exists()){
-            Desktop desktop = Desktop.getDesktop();
-            desktop.open(file);
+        try {
+            if (file.exists()) {
+
+                Desktop desktop = Desktop.getDesktop();
+                desktop.open(file);
+            }
+        } catch (Exception e){
+        System.out.println("some errors");
+    }
+    }
+
+    /***************************************************
+     *                  Client Actions
+     ***************************************************/
+    private boolean goodBye() {
+        // Closes Socket sends back to Login Screen
+        return false;
+    }
+
+    public void login() throws IOException {
+
+        // who are you?
+        System.out.println("Enter UserName:");
+        String username = scanner.nextLine();
+        machineContainer.setUserName(username);
+        System.out.println("Enter your Port Number:");
+        int portNum;
+        while (true) {
+            try {
+                portNum = Integer.parseInt(scanner.nextLine());
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter your Port Number: ");
+            }
         }
+        machineContainer.setPortNum(portNum);
+
+        //send machine info
+        String machineInfo = machineContainer.getMachineInfo();
+        System.out.println("Sending: "+machineInfo);
+        dataOutputStream.writeUTF(machineInfo);
+
+        // Success?
+        String msgServer = dataInputStream.readUTF();
+        System.out.println("Debug: login() - msgServer: "+msgServer);
+        if (msgServer.equals("Success")){
+            System.out.println("Success!");
+        } else {
+            System.out.println("Username is taken, please try again.\n");
+        }
+    }
+
+    private void chatRoomStart() throws IOException {
+        //Who is the serverRouter?
+        dataOutputStream.writeUTF("Who is ServerRouter?");
+        String message = dataInputStream.readUTF();
+
+        //create serverRouter container
+        MachineContainer serverRouter = new MachineContainer();
+        serverRouter.setMachineInfo(message);
+
+        //Create Chat Room
+        ClientChatRoom clientChatRoom = new ClientChatRoom(machineContainer,serverRouter);
+        //ClientChat clientChat = new ClientChat(machineContainer, serverRouter);
+        //boolean doClose = clientChat.establishConnection();
+        System.out.println("That MFer just closed on us! ");
+        //Close Chat Room
+
+        //Send message that chat room is done
+        dataOutputStream.writeUTF("done");
+
     }
 }

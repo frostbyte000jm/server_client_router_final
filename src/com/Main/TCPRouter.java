@@ -2,6 +2,7 @@ package com.Main;
 
 import com.classes.MachineContainer;
 import com.classes.ProcessComputerInfo;
+import com.staticFields.SettingsForRouter;
 import com.threads.RouterThread;
 
 import java.io.IOException;
@@ -35,38 +36,67 @@ public class TCPRouter {
     private void Login(MachineContainer machineContainer) throws IOException, ClassNotFoundException {
         //declarations
         Scanner scanner = new Scanner(System.in);
+        SettingsForRouter settingsForRouter = new SettingsForRouter();
 
-        //Setup Router
-        System.out.println("Enter Router Name:");
-        //String username = scanner.nextLine();
-        String username = "router01";
+        //  Router Name
+        System.out.println("Enter Router Name (leave bank for "+settingsForRouter.getRouterName()+"):");
+        String username = scanner.nextLine();
+        if (username.length() == 0){
+            username = settingsForRouter.getRouterName();
+        } else {
+            settingsForRouter.setRouterName(username);
+            System.out.println("Updated Server Name in Settings.");
+        }
         machineContainer.setUserName(username);
-        System.out.println("Enter your Port Number:");
+
+        //  Server Port Number
+        System.out.println("Enter your Port Number (Leave Blank for "+settingsForRouter.getPortNum()+"):");
         int portNum;
         while (true) {
             try {
-                //portNum = Integer.parseInt(scanner.nextLine());
-                portNum = 5678;
+                String strPortNum = scanner.nextLine();
+                if (strPortNum.length() == 0){
+                    portNum = settingsForRouter.getPortNum();
+                } else {
+                    portNum = Integer.parseInt(strPortNum);
+                    settingsForRouter.setPortNum(portNum);
+                    System.out.println("Port Number has been updated in settings.\n" +
+                            "Please Make sure this port number is valid");
+                }
                 break;
             } catch (NumberFormatException e) {
-                System.out.println("Please enter your Port Number: ");
+                System.out.println("Please enter your Port *Number*: ");
             }
         }
         machineContainer.setPortNum(portNum);
 
-        //setup Server
-        System.out.println("Enter Server IP Address:");
-        //String serverIPAddress = scanner.nextLine();
-        String serverIPAddress = "127.0.1.1";
+        //      Set IP Address of Server
+        System.out.println("Router IP Address (Leave Blank for "+settingsForRouter.getServerIPAddress()+"):");
+        String serverIPAddress = scanner.nextLine();
+        if (serverIPAddress.length() == 0){
+            serverIPAddress = settingsForRouter.getServerIPAddress();
+        } else {
+            settingsForRouter.setServerIPAddress(serverIPAddress);
+            System.out.println("Router IP Address has been revised in Settings.");
+        }
         machineContainer.setServerIPAddress(serverIPAddress);
-        System.out.println("Enter the Server Port Number:");
+
+        //      Set Port number of Server
+        System.out.println("Port Number for Server (Leave Blank for "+settingsForRouter.getServerPortNum()+"):");
         int portNumServer;
-        while (true) {
+        while (true){
             try {
-                //portNumServer = Integer.parseInt(scanner.nextLine());
-                portNumServer = 5556;
+                String strPortNum = scanner.nextLine();
+                if (strPortNum.length() == 0) {
+                    portNumServer = settingsForRouter.getServerPortNum();
+                } else {
+                    portNumServer = Integer.parseInt(strPortNum);
+                    settingsForRouter.setServerPortNum(portNumServer);
+                    System.out.println("Server Router Port Number has been updated in settings.\n" +
+                            "Please Make sure this port number is valid");
+                }
                 break;
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException e){
                 System.out.println("Please enter your Port Number: ");
             }
         }

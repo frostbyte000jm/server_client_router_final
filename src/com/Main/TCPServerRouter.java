@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
 public class TCPServerRouter {
     //declarations
-    private ArrayList<MachineContainer> arrServerContainer;
+    private ArrayList<MachineContainer> arrServerContainer, arrChatContainer;
     private MachineContainer machineContainer;
     private String machineInfo;
 
@@ -38,6 +38,7 @@ public class TCPServerRouter {
     private void waitForConnection(MachineContainer machineContainer) throws IOException {
         //declarations
         this.arrServerContainer = new ArrayList<MachineContainer>();
+        this.arrChatContainer = new ArrayList<>();
         this.machineContainer = machineContainer;
         int portNum = machineContainer.getPortNum();
         machineInfo = machineContainer.getMachineInfo();
@@ -124,5 +125,52 @@ public class TCPServerRouter {
 
     public String getMachineInfo(){
         return machineInfo;
+    }
+
+    public void addClientToChat(String machineInfo){
+        //check to see server already exist. If so end
+        for (int i = 0; i < arrChatContainer.size(); i++){
+            String instServer = arrChatContainer.get(i).getMachineInfo();
+            if (machineInfo.equals(instServer)){
+                return;
+            }
+        }
+        //if not add machine
+        MachineContainer machineContainer = new MachineContainer();
+        machineContainer.setMachineInfo(machineInfo);
+        arrChatContainer.add(machineContainer);
+    }
+
+    public void removeClientFromChat(String machineInfo) {
+        //Loop through machines
+        for (int i = 0; i < arrChatContainer.size(); i++){
+            String instServer = arrChatContainer.get(i).getMachineInfo();
+            //find machine
+            if (machineInfo.equals(instServer)){
+                //remove machine
+                arrChatContainer.remove(i);
+                return;
+            }
+        }
+    }
+
+    public String getClientChatList(String machineInfo) {
+        //This will return a list of Servers, excluding the one asking.
+        StringBuilder clients = new StringBuilder();
+        boolean doFirst = true;
+
+        // if there is more than one server concat them with **
+        for (int i = 0; i < arrChatContainer.size(); i++){
+            String instServer = arrChatContainer.get(i).getMachineInfo();
+            if (!machineInfo.equals(instServer) ){
+                if (doFirst){
+                    clients.append(instServer);
+                    doFirst = false;
+                } else {
+                    clients.append(":").append(instServer);
+                }
+            }
+        }
+        return clients.toString();
     }
 }

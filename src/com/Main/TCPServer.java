@@ -130,7 +130,7 @@ public class TCPServer {
             }
 
             //Send to Server Thread
-            ServerThread serverThread = new ServerThread(routerSocket,this);
+            ServerThread serverThread = new ServerThread(routerSocket, machineContainer, this);
             serverThread.start();
         }
     }
@@ -283,16 +283,22 @@ public class TCPServer {
 
     public String getClientList(String machineInfo){
         //This will return a list of Clients, excluding the one asking.
-        String clients = arrClientContainer.get(0).getMachineInfo();;
+        StringBuilder clients = new StringBuilder();
+        boolean doFirst = true;
 
         // if there is more than one server concat them with **
-        for (int i = 1; i < arrClientContainer.size(); i++){
+        for (int i = 0; i < arrClientContainer.size(); i++){
             String instServer = arrClientContainer.get(i).getMachineInfo();
-            if (machineInfo != instServer){
-                clients = clients +"**"+ instServer;
+            if (!machineInfo.equals(instServer)){
+                if (doFirst){
+                    clients.append(instServer);
+                    doFirst = false;
+                } else {
+                    clients.append(":").append(instServer);
+                }
             }
         }
-        return clients;
+        return clients.toString();
     }
 
     /***************************************************

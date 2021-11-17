@@ -7,7 +7,7 @@ public class SettingsForServer {
     private int portNum = 5556;
     private String serverName = "Server01";
     private final String home = System.getProperty("user.home");
-    private String folder = home+File.separator+File.separator+"Documents"+
+    private String folder = home+File.separator+"Documents"+
             File.separator+"Temp"+File.separator+"server01";
     private final int threadMax = 10;
 
