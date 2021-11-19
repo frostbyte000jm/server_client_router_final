@@ -1,8 +1,6 @@
 package com.threads;
 
-import com.Main.TCPServer;
 import com.Main.TCPServerRouter;
-import com.classes.MachineContainer;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -51,9 +49,6 @@ public class ServerRouterThread extends Thread {
                 case "Remove_Server" -> removeServer();
                 case "Get_Server_List" -> serverList();
                 case "Get_ServerRouter_Info" -> getMachineInfo();
-                case "Add_Client_Chat" -> addClientChat();
-                case "Remove_Client_Chat" -> removeClientChat();
-                case "Get_Client_Chat_List" -> getClientChat();
                 case "good_bye" -> {
                     System.out.println("good bye.");
                     doRun = false;
@@ -62,30 +57,6 @@ public class ServerRouterThread extends Thread {
                 }
             }
         }
-    }
-
-    private void getClientChat() throws IOException {
-        dataOutputStream.writeUTF("Who_is_Client?");
-        String message = dataInputStream.readUTF();
-        System.out.println("Client: "+message);
-
-        dataOutputStream.writeUTF(tcpServerRouter.getClientChatList(message));
-    }
-
-    private void removeClientChat() throws IOException {
-        dataOutputStream.writeUTF("Who_is_Client?");
-        String message = dataInputStream.readUTF();
-        System.out.println("Server: "+message);
-
-        tcpServerRouter.removeClientFromChat(message);
-    }
-
-    private void addClientChat() throws IOException {
-        dataOutputStream.writeUTF("Who_is_Client?");
-        String message = dataInputStream.readUTF();
-        System.out.println("Server: "+message);
-
-        tcpServerRouter.addClientToChat(message);
     }
 
     private void registerServer() throws IOException {
@@ -127,5 +98,4 @@ public class ServerRouterThread extends Thread {
     private void getMachineInfo() throws IOException {
         dataOutputStream.writeUTF(tcpServerRouter.getMachineInfo());
     }
-
 }

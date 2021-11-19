@@ -210,9 +210,9 @@ public class RouterThread extends Thread {
         // Tell Client that the Server wants to send a message, and let the server know when ready.
         dataOutputStreamClient.writeUTF(action);
         msgClient = dataInputStreamClient.readUTF();
-        System.out.println("chatRoomStart() - Expect: Who is ServerRouter? "+ msgClient);
+        System.out.println("chatRoomStart() - Expect: who with? "+ msgClient);
         dataOutputStreamServer.writeUTF(msgClient);
-        msgServer = dataInputStreamServer.readUTF(); //serverRouter Info
+        msgServer = dataInputStreamServer.readUTF(); //chatrooms or chat_room_create
         dataOutputStreamClient.writeUTF(msgServer);
 
         //Let Server know when complete
@@ -226,6 +226,4 @@ public class RouterThread extends Thread {
         dataOutputStreamClient.writeUTF(action);
         return false;
     }
-
-
 }

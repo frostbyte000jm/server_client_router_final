@@ -16,12 +16,12 @@ public class ServerThread extends Thread{
     private DataOutputStream dataOutputStream;
     private DataInputStream dataInputStream;
     private String whoConnected, clientMachineInfo, serverMachineInfo;
-    private MachineContainer machineContainer;
+    private MachineContainer machineContainerServer, machineContainerClient;
 
     public ServerThread(Socket routerSocket, MachineContainer machineContainer, TCPServer tcpServer) throws IOException {
         this.tcpServer = tcpServer;
         this.serverMachineInfo = tcpServer.getMachineInfo();
-        this.machineContainer = machineContainer;
+        this.machineContainerServer = machineContainer;
 
         // Connect to Incoming
         System.out.println("Connection established.");
@@ -37,10 +37,6 @@ public class ServerThread extends Thread{
 
         //Who is Connected
         this.whoConnected = message;
-
-        /*//finish handshake
-        message = dataInputStream.readUTF();
-        System.out.println("Router Said: "+message);*/
     }
 
     //The Thread will ask who is connected and get them started with the correct interface
@@ -114,8 +110,8 @@ public class ServerThread extends Thread{
             if (fileFolder.exists()){
                 // create new fileFolderContainer
                 FileFolderContainer fileFolderContainer = new FileFolderContainer();
-                fileFolderContainer.machineContainer = machineContainer;
-                fileFolderContainer.serverName = machineContainer.getUserName();
+                fileFolderContainer.machineContainer = machineContainerServer;
+                fileFolderContainer.serverName = machineContainerServer.getUserName();
                 fileFolderContainer.isFolder = fileFolder.isDirectory();
                 fileFolderContainer.location = fullPathContents;
                 fileFolderContainer.fileFolderName = contents[i];
@@ -139,6 +135,7 @@ public class ServerThread extends Thread{
             switch (message){
                 case "file_list" -> sendServerFileList();
                 case "send_file" -> sendRequestedFile();
+                case "send_chat_rooms" -> sendChatRooms();
                 case "good_bye" -> {
                     System.out.println("good bye.");
                     doRun = false;
@@ -146,8 +143,6 @@ public class ServerThread extends Thread{
             }
         }
     }
-    
-    
 
     /***************************************************
      *             Server Request
@@ -230,8 +225,6 @@ public class ServerThread extends Thread{
         System.out.println("getExternalFile() - Expect: File Location? - "+msgOtherServer);
         dataOutputStreamServer.writeUTF(fileLocation);
 
-
-
         // wait to receive File Name Bytes
         int fileNameBytesLength = dataInputStreamServer.readInt();
 
@@ -258,8 +251,6 @@ public class ServerThread extends Thread{
 
         return file;
     }
-
-
 
     /***************************************************
      *             Server Services
@@ -300,6 +291,10 @@ public class ServerThread extends Thread{
         dataOutputStream.write(fileBytes);
     }
 
+    private void sendChatRooms() throws IOException {
+        dataOutputStream.writeUTF(tcpServer.getChatRooms("NA"));
+    }
+
     /***************************************************
      *             Server Router Services
      ***************************************************/
@@ -328,8 +323,6 @@ public class ServerThread extends Thread{
         }
         return null;
     }
-
-
 
     /******************************************************
      *      Functions to Client
@@ -471,7 +464,6 @@ public class ServerThread extends Thread{
         System.out.println("Time to send File: "+timeDisplay);
     }
 
-
     /***************************************************
      *                  Actions
      ***************************************************/
@@ -489,9 +481,69 @@ public class ServerThread extends Thread{
             case "upper_txt_doc" -> uppercaseTextFile();
             case "send_file" -> sendFileChoice();
             case "request_file" -> receiveFileToServer();
-            case "chat_room" -> chatRoom();
+            case "chat_room_start" -> chatRoomStart();
+            case "chat_room_join" -> chatRoomJoin();
             case "server_list" -> serverListHack();
             case "good_bye" -> goodbye();
+        }
+    }
+
+    private void chatRoomJoin() throws IOException {
+        //get local chatrooms
+        boolean doFirstRun = true;
+        String strChatRooms = tcpServer.getChatRooms(clientMachineInfo);
+        StringBuilder stringBuilder = new StringBuilder();
+        if (strChatRooms.length()>0){
+            stringBuilder.append(strChatRooms);
+            doFirstRun = false;
+        }
+
+        // get list of servers
+        ArrayList<MachineContainer> arrServers = getServers();
+
+        if (arrServers != null){
+            //get list of chatroom
+            for (MachineContainer server: arrServers) {
+                // set up socket
+                String ipAddress = server.getLocalIPAddress();
+                int portNum = server.getPortNum();
+                Socket serverSocket = new Socket(ipAddress, portNum);
+                // call server
+                DataOutputStream dataOutputStreamServer = new DataOutputStream(serverSocket.getOutputStream());
+                DataInputStream dataInputStreamServer = new DataInputStream(serverSocket.getInputStream());
+                String msgOtherServer = dataInputStreamServer.readUTF();
+                System.out.println("chatRoomJoin() - Expect: Who are you - "+msgOtherServer);
+                dataOutputStreamServer.writeUTF("__Server__");
+                // ask for list
+                msgOtherServer = dataInputStreamServer.readUTF();
+                System.out.println("chatRoomJoin() - Expect: Service Needed? - "+msgOtherServer);
+                dataOutputStreamServer.writeUTF("send_chat_rooms");
+                msgOtherServer = dataInputStreamServer.readUTF();
+                System.out.println("chatRoomJoin() - Expect: Stringify of Chat rooms? - "+msgOtherServer);
+
+                if (msgOtherServer.length() > 0){
+                    if(doFirstRun){
+                        stringBuilder.append(msgOtherServer);
+                        doFirstRun = false;
+                    } else {
+                        stringBuilder.append(":").append(msgOtherServer);
+                    }
+                }
+            }
+        }
+
+        if(stringBuilder.isEmpty()){
+            sendMessage("There is no one to talk to.", false);
+        } else {
+            //send client to chatroom
+            dataOutputStream.writeUTF("client_chat_room");
+            String clientMsg = dataInputStream.readUTF();
+            System.out.println("chatRoomJoin() - Expect: who with? "+clientMsg);
+            dataOutputStream.writeUTF(stringBuilder.toString());
+
+            //wait for done command
+            clientMsg = dataInputStream.readUTF();
+            System.out.println("chatRoom() - Expect: Done "+clientMsg);
         }
     }
 
@@ -499,53 +551,20 @@ public class ServerThread extends Thread{
         getServers();
     }
 
-    private void chatRoom() throws IOException {
-        //contact ServerRouter and add client (hangup)
-        //set up connection to Server Router
-        /*Socket socket = tcpServer.connectServerRouter();
-        DataInputStream dataInputStreamRouter = new DataInputStream(socket.getInputStream());
-        DataOutputStream dataOutputStreamRouter = new DataOutputStream(socket.getOutputStream());
+    private void chatRoomStart() throws IOException {
+        // load chatroom to server
+        tcpServer.addChatRoom(machineContainerClient);
 
-        //get servers
-        String message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: service_needed "+message);
-        dataOutputStreamRouter.writeUTF("Add_Client_Chat"); 
-        message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: Who is client? "+message);
-        dataOutputStreamRouter.writeUTF(clientMachineInfo);
-        message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: service_needed "+message);
-        dataOutputStreamRouter.writeUTF("good_bye");*/
-        
-        //send client chat_room action
+        //send client to chat room
         dataOutputStream.writeUTF("client_chat_room");
         String clientMsg = dataInputStream.readUTF();
-        System.out.println("chatRoom() - Expect: Who is ServerRouter "+clientMsg);
+        System.out.println("chatRoomStart() - Expect: who with? "+clientMsg);
+        dataOutputStream.writeUTF("chat_room_create");
 
-        //get serverRouter stringify
-        MachineContainer serverRouter = tcpServer.getServerRouterMachineContainer();
-        String strServerRouter = serverRouter.getMachineInfo();
-        dataOutputStream.writeUTF(strServerRouter);
-        
-        //wait for reply
+        //wait for done command
         clientMsg = dataInputStream.readUTF();
         System.out.println("chatRoom() - Expect: Done "+clientMsg);
-        
-        /*//remove client from server router chat room (hangup)
-        socket = tcpServer.connectServerRouter();
-        dataInputStreamRouter = new DataInputStream(socket.getInputStream());
-        dataOutputStreamRouter = new DataOutputStream(socket.getOutputStream());
-
-        //get servers
-        message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: service_needed "+message);
-        dataOutputStreamRouter.writeUTF("Remove_Client_Chat");
-        message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: Who is client? "+message);
-        dataOutputStreamRouter.writeUTF(clientMachineInfo);
-        message = dataInputStreamRouter.readUTF();
-        System.out.println("chatRoom() - Expect: service_needed "+message);
-        dataOutputStreamRouter.writeUTF("good_bye");*/
+        tcpServer.removeChatRoom(machineContainerClient);
     }
 
     //When a client is connecting, we need to get their username and computer info
@@ -559,8 +578,9 @@ public class ServerThread extends Thread{
             System.out.println("newClientInfo - Expect: Comp Info - Router: "+clientInfo);
 
             //take client info and turn it into a container.
-            boolean doSuccess = tcpServer.addClient(clientInfo);
-            if (doSuccess){
+            machineContainerClient = tcpServer.addClient(clientInfo);
+
+            if (machineContainerClient != null){
                 clientMachineInfo = clientInfo;
                 dataOutputStream.writeUTF("Success");
                 break;
@@ -573,7 +593,6 @@ public class ServerThread extends Thread{
     }
 
     private void startService() throws IOException {
-
         // send opening message
         String message = """
 
@@ -588,16 +607,10 @@ public class ServerThread extends Thread{
                  Press enter to continue.""";
         sendMessage(message, false);
 
-        /*// wait for router to say ready
-        String msg = dataInputStream.readUTF();
-        System.out.println("Router says: "+msg);*/
-
         // wait for it.
         String reply = requestReply();
         System.out.println("startService - Expect: blank - Router: "+reply);
 
-        // Wait for Client to ask the Router to ask the Server for something.
-        //sendAction("welcome_msg");
         sendWelcomeMessage();
     }
 
@@ -616,8 +629,8 @@ public class ServerThread extends Thread{
                 2) Uppercase Text File
                 3) Request File from Server
                 4) Send File to Server
-                5) Start a chatroom
-                6) server list
+                5) Start a Chatroom
+                6) Join a Chatroom                
                 7) Goodbye""";
 
             // Send message
@@ -641,9 +654,9 @@ public class ServerThread extends Thread{
             } else if (idx == 4) {
                 sendAction("request_file");
             } else if (idx == 5) {
-                sendAction("chat_room");
+                sendAction("chat_room_start");
             } else if (idx == 6) {
-                sendAction("server_list");
+                sendAction("chat_room_join");
             } else if (idx == 7) {
                 sendAction("good_bye");
             } else if (idx == 8) {
@@ -688,9 +701,6 @@ public class ServerThread extends Thread{
             String checkin = dataInputStream.readUTF();
             System.out.println("Router said, Client said: "+checkin);
         }
-
-        //back to home
-        //sendAction("welcome_msg");
     }
 
     private void uppercaseTextFile() throws IOException {
@@ -731,8 +741,6 @@ public class ServerThread extends Thread{
 
         //clean up Temp folder
         removeTempServerDirectory();
-
-        //sendAction("welcome_msg");
     }
 
     private void sendFileChoice() throws IOException {
@@ -787,14 +795,14 @@ public class ServerThread extends Thread{
                 sendMessage("You entered an invalid choice. Please try again. ", true);
             } else if (arrFilesFolderContainer.get(choice).isFolder){
                 sendMessage("Sorry, we don't allow folder crawling at this time, choose again.", true);
-            } else if (arrFilesFolderContainer.get(choice).serverName.equals(machineContainer.getUserName())){
+            } else if (arrFilesFolderContainer.get(choice).serverName.equals(machineContainerServer.getUserName())){
                 location = arrFilesFolderContainer.get(choice).location;
                 //go get the file and send
                 File file = new File(location);
                 System.out.println("File: "+file.getAbsolutePath());
                 sendFile(file);
                 break;
-            } else if (!arrFilesFolderContainer.get(choice).serverName.equals(machineContainer.getUserName())){
+            } else if (!arrFilesFolderContainer.get(choice).serverName.equals(machineContainerServer.getUserName())){
                 String serverName = arrFilesFolderContainer.get(choice).serverName;
                 String fileLoc = arrFilesFolderContainer.get(choice).location;
                 File file = getExternalFile(serverName,fileLoc);
@@ -802,14 +810,7 @@ public class ServerThread extends Thread{
                 sendFile(file);
                 break;
             }
-
         }
-
-
-
-
-        //return to welcome screen
-        //sendAction("welcome_msg");
     }
 
     private void receiveFileToServer() throws IOException {
@@ -831,8 +832,8 @@ public class ServerThread extends Thread{
 
         //return to welcome screen
         System.out.println("Sending Client to Welcome");
-        //sendAction("welcome_msg");
     }
+
     private void goodbye() throws IOException {
         // send a message that the machine is about to disconnect.
         String message = """
@@ -855,7 +856,7 @@ public class ServerThread extends Thread{
         sendMessage(message, false);
 
         //remove client
-        tcpServer.removeClient(clientMachineInfo);
+        tcpServer.removeClient(machineContainerClient);
 
         // inform Router to inform client we are disconnecting
         dataOutputStream.writeUTF("good_bye");

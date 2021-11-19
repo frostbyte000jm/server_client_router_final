@@ -13,11 +13,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.Set;
 
 public class TCPServer {
     //declarations
-    private ArrayList<MachineContainer> arrClientContainer;
+    private ArrayList<MachineContainer> arrClientContainer, arrChatRoomContainer;
     private int portNum;
     private MachineContainer machineContainer, serverRouterMachineContainer;
     private IPAddressAndPortContainer serverRouterIPandPort;
@@ -104,7 +103,8 @@ public class TCPServer {
         boolean doRun = true;
         ServerSocket serverSocket = null;
         Socket routerSocket = null;
-        arrClientContainer = new ArrayList<MachineContainer>();
+        arrClientContainer = new ArrayList<>();
+        arrChatRoomContainer = new ArrayList<>();
 
         //set up ServerSocket and wait on port ????
         while(doRun){
@@ -248,40 +248,26 @@ public class TCPServer {
      *             Client Records
      ***************************************************/
 
-    public boolean addClient(String machineInfo){
+    public MachineContainer addClient(String machineInfo){
         //check to see username already exist. If so end
         MachineContainer machineContainer = new MachineContainer();
         machineContainer.setMachineInfo(machineInfo);
-        String incUserName = machineContainer.getUserName();
 
-        //See if taken
-        for (int i = 0; i < arrClientContainer.size(); i++){
-            String userName = arrClientContainer.get(i).getUserName();
-            if (incUserName.equals(userName)){
-                return false;
+        for (MachineContainer mc: arrClientContainer) {
+            if (mc.equals(machineContainer)){
+                return null;
             }
         }
-
-        //if not add machine
         arrClientContainer.add(machineContainer);
-        return true;
+        return machineContainer;
     }
 
-    public boolean removeClient(String machineInfo) {
-        //Loop through clients
-        for (int i = 0; i < arrClientContainer.size(); i++){
-            String instServer = arrClientContainer.get(i).getMachineInfo();
-            //find client
-            if (machineInfo.equals(instServer)){
-                //remove client
-                arrClientContainer.remove(i);
-                return true;
-            }
-        }
-        return false;
+    public void removeClient(MachineContainer machineInfo) {
+        arrClientContainer.remove(machineInfo);
+
     }
 
-    public String getClientList(String machineInfo){
+    public String getClients(String machineInfo){
         //This will return a list of Clients, excluding the one asking.
         StringBuilder clients = new StringBuilder();
         boolean doFirst = true;
@@ -302,17 +288,46 @@ public class TCPServer {
     }
 
     /***************************************************
-     *             Machine Info
+     *             ChatRoom Records
      ***************************************************/
 
-    public MachineContainer getServerRouterMachineContainer(){
-        return serverRouterMachineContainer;
+    public void addChatRoom (MachineContainer machineInfo){
+        //Add machine to container
+        arrChatRoomContainer.add(machineInfo);
+
     }
 
+    public void removeChatRoom (MachineContainer machineInfo) {
+        //Find container with IP and Port, and remove
+        arrChatRoomContainer.remove(machineInfo);
+    }
+
+    public String getChatRooms(String machineInfo){
+        //This will return a list of Clients, excluding the one asking.
+        StringBuilder clients = new StringBuilder();
+        boolean doFirst = true;
+
+        // if there is more than one server concat them with **
+        for (int i = 0; i < arrChatRoomContainer.size(); i++){
+            String instServer = arrChatRoomContainer.get(i).getMachineInfo();
+            if (!machineInfo.equals(instServer)){
+                if (doFirst){
+                    clients.append(instServer);
+                    doFirst = false;
+                } else {
+                    clients.append(":").append(instServer);
+                }
+            }
+        }
+        return clients.toString();
+    }
+
+    /***************************************************
+     *             Machine Info
+     ***************************************************/
     public String getMachineInfo(){
         return machineContainer.getMachineInfo();
     }
-
     public String getLocalFolder() {
         return localFolder;
     }

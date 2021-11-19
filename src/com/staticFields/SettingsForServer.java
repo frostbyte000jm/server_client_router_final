@@ -9,7 +9,6 @@ public class SettingsForServer {
     private final String home = System.getProperty("user.home");
     private String folder = home+File.separator+"Documents"+
             File.separator+"Temp"+File.separator+"server01";
-    private final int threadMax = 10;
 
     //static values ServerRouter (Watchtower)
     private int portNumServerRouter = 5555;
@@ -19,7 +18,6 @@ public class SettingsForServer {
     public int getPortNum() { return portNum; }
     public String getServerName() { return serverName; }
     public String getFolder() { return folder; }
-    public int getThreadMax() { return threadMax; }
 
     //gets serverRouter
     public int getPortNumServerRouter() { return portNumServerRouter; }

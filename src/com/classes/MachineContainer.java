@@ -25,27 +25,11 @@ public class MachineContainer implements Serializable {
         return localHostName+"|"+localIPAddress+"|"+externalIPAddress+"|"+userName+"|"+portNum+"|"+portNumToCall+"|"+isServer+"|"+isRouter+"|"+serverIPAddress+"|";
     }
 
-    //for external use only
-    public ArrayList<MachineContainer> getMachineList(String machines){
-        ArrayList<MachineContainer> arrMachines = new ArrayList<MachineContainer>();
-        String[] arrMachineInfo = machines.split(":");
-
-        for (int i = 0; i < arrMachineInfo.length; i++){
-            MachineContainer machineContainer = new MachineContainer();
-            machineContainer.setMachineInfo(arrMachineInfo[i]);
-            arrMachines.add(machineContainer);
-        }
-        return arrMachines;
-    }
-
     public void setMachineInfo(String machineInfo){
+        //Split machine info.
         String[] info = machineInfo.split("\\|");
-        /*System.out.println("Machine Container: ");
 
-        for (int i = 0; i < info.length; i++){
-            System.out.println("Info["+i+"]: "+info[i]);
-        }*/
-
+        //set machine info.
         this.localHostName = info[0];
         this.localIPAddress = info[1];
         this.externalIPAddress = info[2];
@@ -79,23 +63,18 @@ public class MachineContainer implements Serializable {
     public void setIsRouter(int isRouter){ this.isRouter = isRouter; }
     public void setServerIPAddress(String serverIPAddress){ this.serverIPAddress = serverIPAddress; }
 
-}
-/*private String localIPAddress, externalIPAddress, localHostName, userName;
-    private int portNum;
+    /***************************************************
+     *             External Use Only
+     ***************************************************/
+    public ArrayList<MachineContainer> getMachineList(String machines){
+        ArrayList<MachineContainer> arrMachines = new ArrayList<MachineContainer>();
+        String[] arrMachineInfo = machines.split(":");
 
-    public MachineContainer(String localIPAddress, String externalIPAddress, String localHostName) {
-        this.externalIPAddress = externalIPAddress;
-        this.localHostName = localHostName;
-        this.localIPAddress = localIPAddress;
-        this.userName = "";
-        this.portNum = 0;
+        for (int i = 0; i < arrMachineInfo.length; i++){
+            MachineContainer machineContainer = new MachineContainer();
+            machineContainer.setMachineInfo(arrMachineInfo[i]);
+            arrMachines.add(machineContainer);
+        }
+        return arrMachines;
     }
-
-    public String getLocalIPAddress(){ return localIPAddress; }
-    public String getLocalHostName(){ return localHostName; }
-    public String getExternalIPAddress(){ return externalIPAddress; }
-    public String getUserName(){ return userName; }
-    public int getPortNum(){ return portNum; }
-
-    public void setUserName(String userName){ this.userName = userName; }
-    public void setPortNum(int portNum){ this.portNum = portNum; }*/
+}

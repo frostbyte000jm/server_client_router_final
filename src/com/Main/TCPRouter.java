@@ -137,15 +137,10 @@ public class TCPRouter {
                 System.err.println("Unable to accept a connection.");
                 System.exit(1);
             }
-
             RouterThread routerThread = new RouterThread(clientSocket,this);
             routerThread.start();
-
-
-            System.out.println("Thread Created");
         }
     }
-
     public String getServerIPAddress() { return serverIPAddress; }
     public int getPortNumServer(){ return portNumServer; }
 }

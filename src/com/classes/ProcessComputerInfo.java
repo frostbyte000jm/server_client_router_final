@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+// The job of this class is to figure out who a machine is. These passes back strings to be used for Machine Container
 public class ProcessComputerInfo {
     //declarations
     private String localIPAddress, externalIPAddress, localHostName;
